@@ -3,7 +3,7 @@ sys.path.append(".")
 from fastapi import FastAPI
 from pydantic import BaseModel
 # from Backend.chatbot2 import query_titanic
-from Backend.chatbot import query_titanic
+from Backend.chatbot3 import query_titanic
 import uvicorn
 
 app = FastAPI()
@@ -18,9 +18,16 @@ class QuestionRequest(BaseModel):
 
 @app.post("/ask/")
 def ask(question_request: QuestionRequest):
-    question = question_request.question
-    print(question)
-    response = query_titanic(question)
+    # question = question_request.question
+    # print(question)
+    # query = "How many passengers survived?"
+    # query = "How many passengers embarked from each port?"  
+    # query = "Show me a histogram of passenger ages"   
+    # query = "is there any null value " 
+    query = "What was the average ticket fare?" 
+    # query = "What is the average age of passengers?"
+    # query = "How many rows are in the Titanic dataset?"
+    response = query_titanic(query)
     return {"response": response}
 
 if __name__ == "__main__":
