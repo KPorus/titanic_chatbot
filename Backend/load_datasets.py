@@ -12,4 +12,4 @@ def load_Dataset():
     df = pd.read_csv("https://raw.githubusercontent.com/KPorus/machine-learning-and-python/refs/heads/main/titanic.csv")
     print("Dataset loaded successfully.")
     # print(df)
-    return df.dropna(axis=1)
+    return df

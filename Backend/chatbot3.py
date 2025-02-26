@@ -1,15 +1,26 @@
-
 import os
 from dotenv import load_dotenv
 from langchain_experimental.agents import create_pandas_dataframe_agent
 from langchain.agents import AgentType
 from langchain_huggingface import HuggingFaceEndpoint
-from langchain.chains import LLMChain
-from langchain_core.prompts import PromptTemplate
 from langchain_experimental.tools.python.tool import PythonREPLTool
 from Backend.load_datasets import load_Dataset
-from langchain.output_parsers import PydanticOutputParser
-from pydantic import BaseModel, Field
+import json, re
+import base64
+import matplotlib.pyplot as plt
+
+# Example helper function to generate a plot and return a base64 encoded string.
+# You can adjust this function or have the agent generate plots dynamically.
+def save_plot_and_return_base64():
+    plt.figure()
+    plt.plot([1, 2, 3, 4], [1, 4, 9, 16])
+    plt.title("Example Plot")
+    plot_path = "plot.png"
+    plt.savefig(plot_path)
+    plt.close()
+    with open(plot_path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode("utf-8")
+    return encoded
 
 load_dotenv()
 hugging_face_api_key = os.getenv("hugging_face_api_key")
@@ -21,63 +32,74 @@ llm = HuggingFaceEndpoint(
 )
 tools = [PythonREPLTool()]
 
-# Create the agent with error handling
+# Updated prompt: the agent is now instructed to output a JSON object with two keys:
+# "response" for text and "plot" for the base64 image (or an empty string if no visualization).
 agent = create_pandas_dataframe_agent(
     llm=llm,
     df=df,
     agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
     verbose=True,
-    handle_parsing_errors=True,  # Critical for recovering from errors
+    handle_parsing_errors=True,  # This will allow the agent to try again on parsing errors.
     allow_dangerous_code=True,
     tools=tools,
-    prefix = """You are an AI assistant tasked with analyzing the Titanic dataset using Python. 
-You have access to a Python REPL tool to execute code on the dataset, which is loaded as a pandas DataFrame named 'df'.
+    prefix = """You are an AI assistant for data scientists and data analysts working exclusively on the Titanic dataset. 
+You have access to a Python REPL tool to execute code on the dataset, which is loaded as a pandas DataFrame named 'df'. 
+If appropriate, you can generate visualizations. When a visualization is needed, generate the plot using Python code,
+save the plot (for example, as a PNG), and then encode the image in base64 format so that it can be rendered on the frontend.
 
-To answer questions:
-1. Think step by step, explaining your reasoning.
-2. Use the Python REPL tool to calculate the answer if needed.
-3. Provide the final answer **exactly** as valid JSON, fenced by triple backticks (```), with one field called "response" containing the answer as a string.
+When answering questions:
+1. Think step by step internally.
+2. Use the Python REPL tool to compute any required values or generate plots if needed.
+3. **Output exactly one valid JSON object (and nothing else) enclosed in triple backticks.**
+   The JSON object must have exactly two keys:
+   - "response": a string containing your textual answer.
+   - "plot": a string containing the base64 encoded image of the plot if a visualization is generated, or an empty string ("") if no visualization is needed.
+Do not include any extra text, commentary, or nested JSON.
 
 For example:
 Question: How many passengers survived?
-Thought: I need to count survivors. The 'Survived' column uses 1 for survived and 0 for not survived. I’ll use the Python REPL to sum this column.
-Action: Use Python REPL to run `df['Survived'].sum()`
+Thought: I will use the Python REPL to compute the survivors from the 'Survived' column.
 Observation: The result is 342.
-Thought: So, 342 passengers survived.
 Final Answer:
-{{"response": Observation}}
-**Do not include extra text like 'The final answer is' or use single backticks (`) in the Final Answer section.** Only provide the JSON between triple backticks.
-
+{{"response": "342 passengers survived.", "plot": ""}}
 Now, answer this question:
 Question: {input}
 Thought:
 """
 )
 
-
-
-# Query function
+# Modified query function that extracts a JSON block with two keys.
 def query_titanic(query):
     try:
         response = agent.run({'input': query})
-        import json
-        import re
-
-        # Try to find JSON in triple backticks first (preferred format)
-        json_match = re.search(r'Final Answer:\s*```\s*(\{.*?\})\s*```', response, re.DOTALL | re.IGNORECASE)
+        
+        # Attempt to extract the JSON block enclosed in triple backticks.
+        json_match = re.search(r'```(\{.*?\})```', response, re.DOTALL)
         if json_match:
-            response_json = json.loads(json_match.group(1))
-            return response_json["response"]
-
-        # Fallback: Extract number from "The final answer is `X`"
-        fallback_match = re.search(r'Final Answer:.*?`([\d.]+)`', response, re.DOTALL | re.IGNORECASE)
-        if fallback_match:
-            return fallback_match.group(1)
-
-        return "Error: Could not parse the final answer"
+            json_str = json_match.group(1).strip()
+            try:
+                result = json.loads(json_str)
+                text_response = result.get("response", "Error: 'response' key not found")
+                plot_data = result.get("plot", "")
+                return {"response": text_response, "plot": plot_data}
+            except Exception as e:
+                return {"response": f"Error: Could not parse JSON. Details: {str(e)}", "plot": ""}
+        
+        # Fallback: search for any JSON-like substring.
+        json_candidates = re.findall(r'(\{.*\})', response)
+        if json_candidates:
+            try:
+                result = json.loads(json_candidates[-1])
+                text_response = result.get("response", "Error: 'response' key not found")
+                plot_data = result.get("plot", "")
+                return {"response": text_response, "plot": plot_data}
+            except Exception:
+                return {"response": "Error: Could not parse JSON from fallback extraction", "plot": ""}
+        return {"response": "Error: Could not parse the final answer", "plot": ""}
     except Exception as e:
-        return f"An error occurred: {str(e)}"
-    
+        return {"response": f"An error occurred: {str(e)}", "plot": ""}
+
+
 #     class TitanicResponse(BaseModel):
 #     response: str = Field(..., description="A response to the question about the Titanic dataset.")
 
