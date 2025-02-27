@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from threading import Thread
 from pydantic import BaseModel
 # from Backend.chatbot2 import query_titanic
-from Backend.chatbot3 import query_titanic
+from chatbot3 import query_titanic
 import uvicorn
 import streamlit as st
 import requests
