@@ -14,3 +14,4 @@ langchain-experimental
 langchain-huggingface
 python-dotenv
 kagglehub
+tabulate
