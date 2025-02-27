@@ -1,8 +1,5 @@
-fastapi
-uvicorn
 pandas
 matplotlib
-seaborn
 requests
 langchain_community
 openai 
@@ -10,3 +7,9 @@ langchain
 pydantic
 waitress
 langchain_openai
+streamlit
+fastapi
+uvicorn
+langchain-experimental
+langchain-huggingface
+python-dotenv
