@@ -14,7 +14,8 @@ df = load_Dataset()
 
 llm = HuggingFaceEndpoint(
     temperature=0.7,
-    repo_id="tiiuae/falcon-7b-instruct",
+    repo_id="gpt2",
+    # repo_id="tiiuae/falcon-7b-instruct",
     # repo_id="mistralai/Mixtral-8x7B-Instruct-v0.1",
 )
 
