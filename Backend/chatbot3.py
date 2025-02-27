@@ -14,9 +14,9 @@ df = load_Dataset()
 
 llm = HuggingFaceEndpoint(
     temperature=0.7,
-    repo_id="gpt2",
+    # repo_id="gpt2",
     # repo_id="tiiuae/falcon-7b-instruct",
-    # repo_id="mistralai/Mixtral-8x7B-Instruct-v0.1",
+    repo_id="mistralai/Mixtral-8x7B-Instruct-v0.1",
 )
 
 prefix = """You are an AI assistant analyzing the Titanic dataset using Python. 

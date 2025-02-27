@@ -14,7 +14,7 @@ def home():
 
 
 class QuestionRequest(BaseModel):
-    question: str
+    prompt: str
 
 @app.post("/ask/")
 def ask(question_request: QuestionRequest):
@@ -27,7 +27,7 @@ def ask(question_request: QuestionRequest):
     # query = "What was the average ticket fare?" 
     # query = "What is the average age of passengers?"
     # query = "How many rows are in the Titanic dataset?"
-    response = query_titanic(question_request)
+    response = query_titanic(question_request.prompt)
     return {"response": response}
 
 if __name__ == "__main__":
