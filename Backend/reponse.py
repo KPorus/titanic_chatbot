@@ -1,3 +1,7 @@
+"""
+This is a greeting method
+
+"""
 from datetime import datetime
 
 def respond_to_greeting(query):
