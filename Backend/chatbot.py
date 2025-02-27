@@ -1,3 +1,8 @@
+"""
+This is the file of Hybrid apporch where i run the model with my predefine function 
+
+"""
+
 # import os
 # from dotenv import load_dotenv
 # from langchain.agents import create_pandas_dataframe_agent
